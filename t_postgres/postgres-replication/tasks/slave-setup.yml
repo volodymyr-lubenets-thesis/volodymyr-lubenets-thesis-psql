@@ -1,0 +1,21 @@
+- name: Stop slave postgres
+  service:
+    name: postgresql
+    state: stopped
+
+- name: Give the service few seconds to shut down
+  wait_for:
+    timeout: 5
+
+- name: Clone node by repmgr means
+  become_user: postgres
+  shell: repmgr -h {{ repmgr_master }} -U repmgr -d repmgr -f /etc/repmgr.conf standby clone -F
+
+- name: Start slave postgres
+  service:
+    name: postgresql
+    state: started
+
+- name: Register slave node at repmgr cluster
+  become_user: postgres
+  shell: repmgr -f /etc/repmgr.conf standby register -F || if [ $? -eq 1 ]; then echo "Already registered."; exit 0; else exit 1; fi;

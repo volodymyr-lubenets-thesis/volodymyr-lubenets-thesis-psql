@@ -1,0 +1,37 @@
+- name: Make telegraf config dir
+  file:
+    path: "/srv/docker/telegraf-postgres-monitor"
+    state: directory
+
+- name: Copy telegraf configuration
+  template:
+    src: "telegraf.conf"
+    dest: "/srv/docker/telegraf-postgres-monitor/telegraf.conf"
+  register: telegraf_conf
+
+- name: Setup telegraf monitoring container
+  docker_container:
+    name: "telegraf-postgres-monitor"
+    image: telegraf
+    state: started
+    restart_policy: unless-stopped
+    recreate: "{{ telegraf_conf.changed }}"
+    ports:
+      - 9274:9274
+    # network_mode: host
+    # pid_mode: host
+    volumes:
+      - "/srv/docker/telegraf-postgres-monitor/telegraf.conf:/etc/telegraf/telegraf.conf:ro"
+      - "/var/run/postgresql:/var/run/postgresql"
+
+- name: Template out consul service for metrics
+  copy:
+    dest: "/etc/consul.d/postgres-metrics.json"
+    content: "{{ config | to_nice_json }}"
+  vars:
+    config:
+      service:
+        name: postgres-metrics
+        port: 9274
+        tags: '{{ postgres_monitor_databases | map(attribute="name") | sort }}'
+  notify: restart consul-agent

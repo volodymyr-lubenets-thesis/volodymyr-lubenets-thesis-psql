@@ -1,0 +1,53 @@
+- name: Make grafana persistent dirs
+  file:
+    path: "/srv/docker/grafana/{{item}}"
+    state: directory
+    owner: 472 # grafana user and group
+    group: 472
+  loop:
+    - "log"
+    - "etc"
+    - "lib"
+
+- name: Template out grafana config
+  template:
+    src: config.ini
+    dest: "/srv/docker/grafana/etc/grafana.ini"
+
+- name: Create provisioning config directories
+  file:
+    path: "/srv/docker/grafana/etc/provisioning/{{item}}"
+    state: directory
+    owner: 472 # grafana user and group
+    group: 472
+  loop:
+    - datasources
+    - dashboards
+
+- name: Template out provisioning configs
+  template:
+    src: "{{item}}"
+    dest: "/srv/docker/grafana/etc/provisioning/{{item}}"
+  loop:
+    - datasources/datasources.yaml
+    - dashboards/dashboards.yaml
+
+- name: Create provisioned dashboard directory and copy dashboards there
+  copy:
+    src: "provisioned_dashboards"
+    dest: /srv/docker/grafana/lib/provisioned_dashboards
+    owner: 472 # grafana user and group
+    group: 472
+
+- name: Setup grafana visualizer container
+  docker_container:
+    name: "{{ grafana_container_name }}"
+    image: "grafana/grafana:{{grafana_version}}"
+    state: started
+    restart_policy: unless-stopped
+    network_mode: host
+    recreate: yes
+    volumes:
+      - "/srv/docker/grafana/log:/var/log/grafana:rw"
+      - "/srv/docker/grafana/lib:/var/lib/grafana:rw"
+      - "/srv/docker/grafana/etc:/etc/grafana:ro"

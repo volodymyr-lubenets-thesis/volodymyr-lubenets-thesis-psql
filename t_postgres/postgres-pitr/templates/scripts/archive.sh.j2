@@ -1,0 +1,12 @@
+#!/bin/bash
+
+FN=$1
+PN=$2
+
+if ! [ -f {{ postgres_pitr_archive_dir_prefix }}/{{ postgres_version }}/archive/wal/$FN ]; then
+    cat $PN | gzip -c4 | gpg -e -r {{postgres_pitr_config_gpg_pk_fingerprint}} -o - > {{ postgres_pitr_archive_dir_prefix }}/{{ postgres_version }}/archive/wal/$FN;
+	SUCCESS=$?
+fi
+
+exit $SUCCESS
+

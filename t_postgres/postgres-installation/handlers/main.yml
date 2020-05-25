@@ -1,0 +1,6 @@
+---
+- name: restart postgresql
+  action: service name=postgresql@{{ postgres_version }}-main state=restarted
+
+- name: reload postgresql
+  action: service name=postgresql@{{ postgres_version }}-main state=reloaded

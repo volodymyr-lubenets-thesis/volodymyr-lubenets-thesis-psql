@@ -1,0 +1,8 @@
+- name: Preconfigure install deps
+  hosts: all
+  become: true
+  roles:
+    - role: preconfig
+    - role: docker
+      tags:
+        - docker

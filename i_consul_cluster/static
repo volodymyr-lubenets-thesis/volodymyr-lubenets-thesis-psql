@@ -1,0 +1,12 @@
+[servers]
+192.168.50.11 hostname=sd001
+192.168.50.12 hostname=sd002
+192.168.50.13 hostname=sd003
+
+[clients]
+192.168.50.21 hostname=db001
+192.168.50.22 hostname=db002
+192.168.50.23 hostname=db003
+192.168.50.31 hostname=dr001
+192.168.50.41 hostname=mon001
+192.168.50.51 hostname=ansible001 firewall_allowed_ips='["192.168.244.2"]' firewall_custom_rules='[{"from": "192.168.244.0/30", "to": "192.168.50.0/24", "route":True, "rule":"allow"}, {"to": "192.168.244.0/30", "from": "192.168.50.0/24", "route":True, "rule":"allow"}]'

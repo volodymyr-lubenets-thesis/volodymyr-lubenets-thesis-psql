@@ -1,0 +1,5 @@
+- name: "Setup postgres servers"
+  hosts: postgres-nodes
+  become: yes
+  roles:
+    - postgres-installation

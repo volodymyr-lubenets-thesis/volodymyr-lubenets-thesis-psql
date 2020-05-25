@@ -1,0 +1,12 @@
+- name: Install python-pip
+  apt:
+    name: python-pip
+
+- name: Install setuptools
+  apt:
+    name: python-setuptools
+
+- name: Install docker-py
+  pip:
+    name: docker
+    version: 4.2.0

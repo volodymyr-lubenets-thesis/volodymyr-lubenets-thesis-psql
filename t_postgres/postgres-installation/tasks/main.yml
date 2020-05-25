@@ -1,0 +1,52 @@
+- name: Add postgres repo key
+  apt_key:
+    id: "ACCC4CF8"
+    url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+
+- name: Add postgres apt repository
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ansible_distribution_release}}-pgdg main"
+    filename: pgdg
+
+- name: install postgres pkgs
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+    cache_valid_time: 86400
+  with_items:
+    - "libpq-dev"
+    - "python-psycopg2"
+    - "postgresql-{{ postgres_version }}"
+    - "postgresql-contrib-{{ postgres_version }}"
+
+- name: Create config dir
+  file:
+    state: directory
+    dest: "/etc/postgresql/{{ postgres_version }}/main"
+
+- name: Set postgres configuration
+  template:
+    src: "postgresql.v{{ postgres_version }}.conf.j2"
+    dest: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+    mode: "0644"
+    owner: postgres
+    group: postgres
+  notify: reload postgresql
+
+- name: Copy pg_hba file
+  template:
+    src: "{{item}}.j2"
+    dest: "/etc/postgresql/{{ postgres_version }}/main/{{item}}"
+    owner: postgres
+    group: postgres
+    mode: "0640"
+  notify: reload postgresql
+  with_items:
+    - pg_hba.conf
+    - pg_ident.conf
+
+- name: Mark initial setup as done
+  copy:
+    dest: "/etc/postgresql/{{ postgres_version }}/main/ansible_initialized"
+    content: "Ansible Initialized"
+  notify: restart postgresql

@@ -1,0 +1,60 @@
+- name: Fetch prometheus-node_exporter binary package
+  get_url:
+    url: https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+    dest: /srv/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+    checksum: "{{ node_exporter_checksum }}"
+
+- name: Unarchive package
+  unarchive:
+    src: /srv/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+    dest: /srv/
+    remote_src: true
+    owner: root
+    mode: "0755"
+
+- name: Copy node_exporter binary /usr/local/bin
+  copy:
+    src: /srv/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter
+    dest: /usr/local/bin/node_exporter
+    remote_src: true
+    mode: "0755"
+    owner: root
+    group: root
+  notify: restart node-exporter
+
+- name: Copy node-exporter.service
+  copy:
+    src: node-exporter.service
+    dest: /etc/systemd/system/node-exporter.service
+  notify:
+    - restart node-exporter
+  register: metrics_service_file
+
+- name: Reload systemd daemon
+  command: systemctl daemon-reload
+  when: metrics_service_file.changed
+
+- name: Enable node-exporter service
+  service:
+    name: node-exporter
+    enabled: true
+  notify:
+    - restart node-exporter
+
+- name: Create consul.d directory
+  file:
+    path: "/etc/consul.d"
+    state: directory
+
+- name: Template out consul service for metrics
+  copy:
+    dest: "/etc/consul.d/node-metrics.json"
+    content: "{{ config | to_nice_json }}"
+  vars:
+    config:
+      service:
+        name: node-metrics
+        port: 9100
+        tags: 
+          - 'node_exporter'
+  notify: restart consul-agent

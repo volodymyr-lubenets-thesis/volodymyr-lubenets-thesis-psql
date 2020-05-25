@@ -1,0 +1,10 @@
+- name: Setup docker.service
+  template:
+    src: systemd/docker.service
+    dest: /etc/systemd/system/docker.service
+  register: docker_service
+
+# Don't use notify here to nsure that systemd daemon has been reloaded before docker restart
+- name: Reload systemd daemon
+  command: systemctl daemon-reload
+  when: docker_service.changed

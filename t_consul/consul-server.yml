@@ -1,0 +1,10 @@
+- name: Install consul server
+  hosts: servers
+  become: true
+  roles:
+    - role: consul-binary
+      tags: [consul-binary]
+    - role: consul-server
+      tags: [consul-server]
+    - role: consul-nameserver
+      tags: [consul-nameserver]

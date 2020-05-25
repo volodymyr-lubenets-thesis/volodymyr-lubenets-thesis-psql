@@ -1,0 +1,9 @@
+docker_apt_repository_key:
+  - 58118E89F3A912897C070ADBF76221572C52609D
+  - 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+dockerd_extra_args: ""
+default_docker_version: 1.12.*
+docker_iptables: false
+docker_ipv6: false
+
+restart_docker: false

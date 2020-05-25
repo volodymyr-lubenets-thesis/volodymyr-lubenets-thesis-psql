@@ -1,0 +1,7 @@
+---
+- name: Modify postgres to support PITR and aws backups
+  become: yes
+  hosts:
+    - postgres-nodes
+  roles:
+    - postgres-pitr

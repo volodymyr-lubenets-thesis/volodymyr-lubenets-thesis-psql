@@ -1,0 +1,16 @@
+- name: Create postgres repmgr user
+  postgresql_user:
+    name: repmgr
+    role_attr_flags: SUPERUSER,REPLICATION
+    encrypted: yes
+    password: "{{ postgres_repmgr_user_pass }}"
+  become_user: postgres
+
+- name: Create repmgr database
+  postgresql_db:
+    name: repmgr
+
+- name: Register witness server to cluster
+  become_user: postgres
+  shell: repmgr -f /etc/repmgr.conf witness register -h {{ repmgr_master }} || if [ $? -eq 1 ]; then echo "Already registered."; exit 0; else exit 1; fi;
+    

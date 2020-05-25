@@ -1,0 +1,24 @@
+{
+"service":
+{
+  "id": "{{postgres_service_name}}",
+  "name": "{{postgres_service_name}}",
+  "address": "{{ ansible_all_ipv4_addresses | ipaddr(internal_network) | first }}",
+  "port": 5432,
+  "checks": [
+        {
+                "DeregisterCriticalServiceAfter": "90m",
+                "tcp":"{{ ansible_all_ipv4_addresses | ipaddr(internal_network) | first }}:5432",
+                "interval": "10s",
+                "timeout": "10s"
+        },
+        {
+                "DeregisterCriticalServiceAfter": "90m",
+                "shell":"/bin/sh",
+                "args":["su", "postgres", "-c", "/etc/consul.d/scripts/is_master.sh"],
+                "interval": "10s",
+                "timeout": "10s"
+        }
+  ]
+}
+}

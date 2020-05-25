@@ -1,0 +1,1 @@
+consul_servers_join: "{% set IP_ARR=[] %}{% for host in groups['servers'] %}{% if IP_ARR.insert(loop.index,hostvars[host]) %}{% endif %}{% endfor %}{{IP_ARR|join(',')}}"

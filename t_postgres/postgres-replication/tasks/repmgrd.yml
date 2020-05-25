@@ -1,0 +1,30 @@
+- name: Touch and set ownership on pid file of repmgrd
+  file:
+    state: touch
+    dest: /var/run/repmgrd.pid
+    owner: postgres
+    mode: 0700
+
+- name: Template out the repmgrd init config
+  template:
+    dest: /etc/default/repmgrd
+    src: repmgrd.j2
+
+- name: Restart master postgres
+  systemd:
+    state: restarted
+    name: postgresql
+  when: inventory_hostname == repmgr_master
+
+- name: Restart all the witness instances
+  systemd:
+    state: restarted
+    name: postgresql
+  when:  inventory_hostname in repmgr_witnesses
+
+- name: Perform daemon-reload and restart repmgrd
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+    name: repmgrd

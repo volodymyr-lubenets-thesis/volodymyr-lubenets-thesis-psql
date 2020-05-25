@@ -1,0 +1,2 @@
+postgres_pitr_script_dir_prefix: /etc/postgresql
+postgres_pitr_archive_dir_prefix: /var/lib/postgresql

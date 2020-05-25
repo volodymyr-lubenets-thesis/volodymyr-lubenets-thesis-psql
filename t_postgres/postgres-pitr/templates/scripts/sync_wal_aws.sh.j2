@@ -1,0 +1,5 @@
+#!/bin/bash
+
+PATH={{postgres_pitr_config_PATH_for_cron}}
+
+aws s3 sync {{ postgres_pitr_archive_dir_prefix }}/{{ postgres_version }}/archive/wal {{postgres_pitr_remote_bucket_address}}/wal

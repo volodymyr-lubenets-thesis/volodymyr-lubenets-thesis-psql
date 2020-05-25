@@ -1,0 +1,4 @@
+- name: restart consul-agent
+  service:
+    name: consul-agent
+    state: restarted

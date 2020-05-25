@@ -1,0 +1,12 @@
+- name: restart node-exporter
+  service:
+    name: node-exporter
+    state: restarted
+
+- name: run systemd-tmpfiles create
+  command: systemd-tmpfiles --create
+
+- name: restart consul-agent
+  service:
+    name: consul-agent
+    state: restarted

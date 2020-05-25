@@ -1,0 +1,11 @@
+- name: Install consul agent
+  hosts: clients
+  become: true
+  serial: 1
+  roles:
+    - role: consul-binary
+      tags: [consul-binary]
+    - role: consul-agent
+      tags: [consul-agent]
+    - role: consul-nameserver
+      tags: [consul-nameserver]

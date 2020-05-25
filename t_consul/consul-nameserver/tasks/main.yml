@@ -1,0 +1,4 @@
+- name: Set nameserver 127.0.0.1
+  copy:
+    content: nameserver {{ ansible_all_ipv4_addresses | ipaddr(internal_network) | first }}
+    dest: /etc/resolv.conf

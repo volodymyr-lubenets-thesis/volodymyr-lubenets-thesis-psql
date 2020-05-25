@@ -1,0 +1,16 @@
+#!/bin/bash
+
+PATH={{postgres_pitr_config_PATH_for_cron}}
+
+BASEDIR="{{ postgres_pitr_archive_dir_prefix }}/{{ postgres_version }}/archive/base"
+TIMED_DIR="$(date -u -Iseconds | sed s/\+.\*//)_basebackup"
+
+mkdir -p $BASEDIR;
+cd $BASEDIR;
+
+EXPECTED_SIZE=$(du --summarize {{ postgres_pitr_archive_dir_prefix }}/{{ postgres_version }}/main | awk '{print $1/4}')
+
+pg_basebackup -h {{ inventory_hostname }} -D - -U repmgr -Ft -Xf -w | \
+pigz -4 | \
+gpg -e -r {{postgres_pitr_config_gpg_pk_fingerprint}} -z 0 -o - |\
+aws s3 cp --expected-size $EXPECTED_SIZE - {{postgres_pitr_remote_bucket_address}}/base/$TIMED_DIR.tar.gz.gpg 

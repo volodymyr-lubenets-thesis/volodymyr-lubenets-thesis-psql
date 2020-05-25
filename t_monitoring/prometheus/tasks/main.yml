@@ -1,0 +1,45 @@
+- name: Make prometheus data dir
+  file:
+    path: "/srv/docker/prometheus/data"
+    state: directory
+    owner: nobody
+
+- name: Make prometheus config dir
+  file:
+    path: "/srv/docker/prometheus/conf"
+    state: directory
+
+- name: Write prometheus configuration
+  template:
+    src: "prometheus.yml.j2"
+    dest: "/srv/docker/prometheus/conf/prometheus.yml"
+  notify: reload prometheus
+
+- name: Make prometheus rules.d dir
+  file:
+    path: "/srv/docker/prometheus/conf/rules.d"
+    state: directory
+
+- name: Write prometheus rules
+  copy:
+    dest: "/srv/docker/prometheus/conf/rules.d/rules.conf"
+    content: "{{ prometheus_rules }}"
+  notify: reload prometheus
+
+- name: Setup prometheus container
+  docker_container:
+    name: "{{ prometheus_container_name }}"
+    image: prom/prometheus:v2.10.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time={{ prometheus_storage_tsdb_retention_time }}
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --web.external-url={{ prometheus_web_external_url }}
+    state: "started"
+    restart_policy: unless-stopped
+    network_mode: host
+    volumes:
+      - "/srv/docker/prometheus/conf:/etc/prometheus:ro"
+      - "/srv/docker/prometheus/data:/prometheus"

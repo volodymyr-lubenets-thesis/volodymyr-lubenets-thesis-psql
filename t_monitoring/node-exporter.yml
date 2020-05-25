@@ -1,0 +1,6 @@
+- name: "Setup node exporter to all nodes"
+  hosts: all
+  become: yes
+  roles:
+    - node-exporter
+

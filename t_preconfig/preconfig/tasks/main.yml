@@ -1,0 +1,13 @@
+- name: Preinstall deps
+  apt:
+    name: '{{ item }}'
+    state: latest
+    update_cache: yes
+  loop:
+    - tmux
+    - unzip
+    - ufw
+    - gnupg
+    - pigz
+    - python3-pip
+    - python-pip

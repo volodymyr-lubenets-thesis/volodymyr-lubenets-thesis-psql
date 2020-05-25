@@ -1,0 +1,27 @@
+- name: Ensure /etc/consul.d/scripts dir exists
+  file:
+    state: directory
+    dest: /etc/consul.d/scripts
+
+- name: Template out the script to check service exposure (i.e. is_master)
+  template:
+    src: is_master.sh
+    dest: /etc/consul.d/scripts/is_master.sh
+    mode: 0505
+
+- name: Template out the local script check permission config
+  template:
+    src: permit-local-script-checks.json
+    dest: /etc/consul.d/permit-local-script-checks.json
+    mode: 0400
+
+- name: Template out the service config
+  template:
+    src: postgres-service.json
+    dest: /etc/consul.d/postgres-service.json
+    mode: 0400
+  
+- name: Reload consul-agent service to pick up changes
+  systemd:
+    state: restarted
+    name: consul-agent

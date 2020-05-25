@@ -1,0 +1,36 @@
+#!/bin/bash
+
+PATH={{postgres_pitr_config_PATH_for_cron}}
+
+WINDOW="{{postgres_pitr_rotation_keep_basebackups}}"
+ARCHIVE_DIR="{{postgres_pitr_archive_dir_prefix}}/{{ postgres_version }}/archive"
+WAL_DIR="$ARCHIVE_DIR/wal"
+BASEBACKUP_DIR="$ARCHIVE_DIR/base"
+
+{# COUNT=$WINDOW
+for i in $(ls -t $BASEBACKUP_DIR)
+do
+	if [ $COUNT -le 0 ]; then
+		rm -r $BASEBACKUP_DIR/$i;
+	fi
+	(( COUNT-- ));
+done #}
+
+COUNT=$WINDOW
+NEW_OLDEST=""
+for i in $(ls -t $WAL_DIR)
+do
+	if [[ $i == *"backup" ]]; then 
+		if [ $COUNT -le 0 ]; then
+			NEW_OLDEST=$i;
+			break;
+		fi
+		(( COUNT-- ));
+    fi
+done
+
+test -z $NEW_OLDEST && echo "You havent done this much pg_basebackups on this instance! Nothing to remove" && exit 1;
+
+pg_archivecleanup "$WAL_DIR" "$NEW_OLDEST" && echo "Cleaned up successfully."
+
+

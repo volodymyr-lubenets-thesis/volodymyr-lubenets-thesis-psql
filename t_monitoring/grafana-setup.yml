@@ -1,0 +1,6 @@
+- name: "Setup grafana monitoring container"
+  hosts: monitoring-nodes
+  become: yes
+  roles:
+    - grafana-install
+

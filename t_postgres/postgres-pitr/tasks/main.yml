@@ -1,0 +1,17 @@
+- name: Check if this machine is postgres slave
+  command: psql -At -c 'select pg_is_in_recovery()'
+  become_user: postgres
+  register: pg_is_in_recovery
+  changed_when: False
+
+- name: "Convert the check value to an ansible boolean fact"
+  set_fact:
+    pg_is_slave: "{{ pg_is_in_recovery.stdout == 't' }}"
+
+- include_tasks: "installation.yml"
+  when: not pg_is_slave
+
+- name: "Skip task and inform user if machine is a slave"
+  debug:
+    msg: Node {{ inventory_hostname }} is slave, so no installation process initiated here.
+  when: pg_is_slave

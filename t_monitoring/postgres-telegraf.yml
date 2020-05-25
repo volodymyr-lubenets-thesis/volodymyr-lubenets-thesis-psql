@@ -1,0 +1,5 @@
+- name: "Setup postgres telegraf monitor"
+  hosts: postgres-nodes
+  become: yes
+  roles:
+    - postgres-telegraf

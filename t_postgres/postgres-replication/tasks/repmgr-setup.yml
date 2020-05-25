@@ -1,0 +1,141 @@
+- name: Install ssh transport for apt
+  apt:
+    name: apt-transport-https
+    state: present
+
+- name: Add 2ndquadrant's repo key
+  apt_key:
+    id: "9904CD4BD6BAF0C3"
+    url: "https://dl.2ndquadrant.com/gpg-key.asc"
+
+- name: Add 2ndquadrant's repository
+  apt_repository:
+    repo: "deb https://dl.2ndquadrant.com/default/release/apt/ {{ansible_distribution_release}}-2ndquadrant main"
+
+- name: Install repmgr for postgres 9.6
+  apt:
+    name: postgresql-9.6-repmgr # =4.4 # fix version of repmgr to 4.4
+    state: present
+    update_cache: yes
+
+- name: Check if repmgr is in shared_preload_libraries in PostgreSQL config
+  lineinfile:
+    path: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+    regexp: "^(shared_preload_libraries\\s*=)\\s*\\'(.*)(repmgr)(.*)\\'"
+    state: absent
+  check_mode: yes
+  changed_when: false
+  register: repmgr_in_lib_conf_out
+
+- name: Check if shared_preload_libraries is not empty
+  lineinfile:
+    path: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+    regexp: "[#]*.*(shared_preload_libraries\\s*=)\\s*\\'(.+)\\'"
+    state: absent
+  check_mode: yes
+  changed_when: false
+  register: repmgr_lib_empty
+
+
+- name: Write repmgr to shared_preload_libraries in config
+  replace:
+    path: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+    regexp: "[#]*.*(shared_preload_libraries\\s*=)\\s*\\'(.*)\\'"
+    replace: "\\1 '\\2{{ \"\" if repmgr_lib_empty else \",\" }}repmgr'"
+    owner: postgres
+    group: postgres
+    mode: "0644"
+    backup: yes
+  when: not repmgr_in_lib_conf_out.found
+
+- name: Create directory .ssh at postgres user
+  file:
+    state: directory
+    owner: postgres
+    path: /var/lib/postgresql/.ssh
+    mode: 0700
+
+- name: Generate ssh keys for postgres user on each machine of the cluster
+  openssh_keypair:
+    owner: postgres
+    mode: 0600
+    path: /var/lib/postgresql/.ssh/postgres-rsa-cross
+  register: ssh_result
+
+- name: Create ssh config and include identityfile there
+  copy:
+    mode: 0700
+    owner: postgres
+    dest: /var/lib/postgresql/.ssh/config
+    content: |
+      IdentityFile /var/lib/postgresql/.ssh/postgres-rsa-cross
+
+- name: No host checking for fellow nodes
+  blockinfile:
+    dest: /var/lib/postgresql/.ssh/config
+    marker_begin: "{{item}} BEGIN"
+    block: |
+      Host {{ item }}
+        StrictHostKeyChecking no
+  with_items: "{{ ansible_play_batch }}"
+  when: item != inventory_hostname
+
+- name: Create array of public keys
+  set_fact:
+    public_key: "{{ ssh_result.public_key }}"
+
+- name: Create authorized_keys file on each of the machines
+  file:
+    owner: postgres
+    mode: 0700
+    path: "/var/lib/postgresql/.ssh/authorized_keys"
+    state: touch
+
+- name: Write public keys to authorized_keys file
+  lineinfile:
+    dest: /var/lib/postgresql/.ssh/authorized_keys
+    line: "{{ hostvars[item]['public_key'] }}"
+  with_items: "{{ play_hosts }}"
+
+- name: Create .pgpass file if !exists and append passwords there
+  lineinfile:
+    create: yes
+    line: "{{ item[0] }}:{{ postgres_port | default(5432) }}:{{ item[1] }}:repmgr:{{ postgres_repmgr_user_pass }}"
+    dest: /var/lib/postgresql/.pgpass
+    owner: postgres
+    group: postgres
+    mode: 0600
+  with_nested:
+    - "{{ play_hosts }}" # hostnames
+    - [ 'replication', 'repmgr' ] # databases to provide access to
+
+- name: Render repmgr config
+  template:
+    src: repmgr.conf
+    dest: /etc/repmgr.conf
+    owner: postgres
+    group: postgres
+    mode: 0600
+  with_dict: "{{ repmgr_nodes }}"
+  when: item.key == inventory_hostname
+
+- name: Ensure sudoers.d exists
+  file:
+    state: directory
+    path: /etc/sudoers.d
+  
+- name: Set includedir in sudoers
+  lineinfile:
+    dest: /etc/sudoers
+    line: "#includedir /etc/sudoers.d"
+    state: present
+    validate: "/usr/sbin/visudo -cf %s"
+
+- name: Configurate sudo for postgres to be able to execute pg_ctlcluster
+  lineinfile:
+    path: /etc/sudoers.d/postgres
+    line: "postgres ALL = NOPASSWD: /usr/bin/pg_ctlcluster"
+    state: present
+    mode: 0440
+    create: yes
+    validate: 'visudo -cf %s'

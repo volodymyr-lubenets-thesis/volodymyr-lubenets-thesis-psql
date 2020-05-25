@@ -1,0 +1,146 @@
+- name: Create {{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/scripts dir
+  file:
+    path: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/scripts"
+    state: directory
+    group: postgres
+    owner: postgres
+    mode: "0770"
+
+- name: Template archive scripts
+  template:
+    src: "scripts/{{ item }}.j2"
+    dest: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/scripts/{{item}}"
+    group: postgres
+    owner: postgres
+    mode: "0770"
+    force: yes
+  with_items:
+    - archive.sh
+    - archive_cleanup.sh
+    - gen_recovery_conf.sh
+    - sync_wal_aws.sh
+    - perform_basebackup.sh
+
+- name: Create archive storage dir in {{postgres_pitr_archive_dir_prefix}}
+  file:
+    path: "{{ postgres_pitr_archive_dir_prefix }}/{{ postgres_version }}/archive/{{ item }}"
+    state: directory
+    group: postgres
+    owner: postgres
+    mode: "0770"
+  with_items:
+    - wal
+    - base
+
+- name: Create aws creds dir in $HOME of postgres
+  file:
+    path: "/var/lib/postgresql/.aws"
+    state: directory
+    group: postgres
+    owner: postgres
+    mode: "0700"
+
+- name: Template credentials for .aws
+  template:
+    src: "credentials/{{ item }}.j2"
+    dest: "/var/lib/postgresql/{{ item }}"
+    owner: postgres
+    group: postgres
+    mode: "0600"
+  with_items:
+    - .aws/config
+    - .aws/credentials
+
+- name: Install pigz (parallel gzip)
+  apt:
+    name: pigz
+
+- name: Install pip
+  apt:
+    name: python-pip
+
+- name: Install awscli over pip
+  pip:
+    name: awscli
+
+- name: Setup GNU Privacy Guard
+  apt:
+    name: gnupg
+
+- name: Create folder for gpg keys at postgres config dir
+  file:
+    path: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/gpg"
+    state: directory
+    group: postgres
+    owner: postgres
+    mode: "0700"
+
+- name: Copy backup encryption pgp key file
+  copy:
+    dest: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/gpg/encrypt.key"
+    content: "{{postgres_pitr_gpg_pubkey}}"
+    group: postgres
+    owner: postgres
+    mode: "0600"
+
+- name: Copy backup encryption pgp key ownertrust
+  copy:
+    dest: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/gpg/encrypt.ownertrust"
+    content: "{{postgres_pitr_gpg_ownertrust}}"
+    group: postgres
+    owner: postgres
+    mode: "0600"
+
+- name: Import backup encryption key
+  command: "gpg --import {{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/gpg/encrypt.key"
+  become_user: postgres
+  #become_method: su
+
+- name: Import backup ownertrust
+  command: "gpg --import-ownertrust {{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/gpg/encrypt.ownertrust"
+  become_user: postgres
+  #become_method: su
+
+- name: Create pg_basebackup periodic job
+  cron:
+    name: pg_basebackup_job
+    user: postgres
+    hour: "1"
+    minute: "0"
+    job: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/scripts/perform_basebackup.sh"
+
+- name: Create archive_cleanup periodic job
+  cron:
+    name: archive_cleanup_job
+    user: postgres
+    hour: "23"
+    minute: "0"
+    job: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/scripts/archive_cleanup.sh"
+
+- name: Create sync_aws periodic job
+  cron:
+    name: sync_aws_each_5m
+    user: postgres
+    minute: "*/5"
+    job: "{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/scripts/sync_wal_aws.sh"
+
+- name: Write archive_command to config
+  replace:
+    path: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+    regexp: "(archive_command\\s*=).*"
+    replace: "\\1 '{{postgres_pitr_script_dir_prefix}}/{{ postgres_version }}/scripts/archive.sh %f %p'"
+    owner: postgres
+    group: postgres
+    mode: "0644"
+    backup: yes
+
+- name: Write archive_timeout to config and reload configuration
+  replace:
+    path: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+    regexp: "#*(archive_timeout\\s*=).*"
+    replace: "\\1 {{postgres_pitr_config_archive_timeout}}"
+    owner: postgres
+    group: postgres
+    mode: "0644"
+    backup: yes
+  notify: reload postgresql

@@ -1,0 +1,14 @@
+[Unit]
+Description=Consul agent service for automatic service discovery
+After=network.target
+
+[Service]
+Type=simple
+Environment=GOMAXPROCS=2
+ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul.d
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

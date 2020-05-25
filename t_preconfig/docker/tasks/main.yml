@@ -1,0 +1,55 @@
+- name: Add docker repository apt key
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: "{{ item }}"
+  with_items: "{{ docker_apt_repository_key }}"
+
+- name: Check if docker is installed
+  stat:
+    path: "/usr/bin/docker"
+  register: st_docker
+
+- set_fact:
+    docker__iptables: "{{ 'true' if docker_iptables else 'false' }}"
+    docker__version: "{{ '=' + docker_version if docker_version is defined else '' }}"
+    docker__version_hold: "{{ docker_version is defined }}"
+    docker__need_install: "{{ (not st_docker.stat.exists) or docker_version is defined }}"
+    docker__apt_repo: "{{ 'deb [arch=amd64] https://download.docker.com/linux/ubuntu %s stable' % ansible_distribution_release if docker__new_version else 'deb https://apt.dockerproject.org/repo ubuntu-%s main' % ansible_distribution_release }}"
+    docker__package: "{{ 'docker-ce' if docker__new_version else 'docker-engine' }}"
+  vars:
+    docker__new_version: "{{ (docker_version is defined and docker_version > '17.') or docker_version is not defined }}"
+
+- name: Add docker repository
+  apt_repository:
+    filename: docker
+    repo: "{{ docker__apt_repo }}"
+
+- include: systemd.yml
+  when: ansible_service_mgr == 'systemd'
+
+- name: Install docker
+  apt:
+    name: "{{ item }}"
+  when: docker__need_install
+  with_items:
+    - "{{ docker__package }}{{ docker__version | default('') }}"
+
+- name: Hold docker docker version
+  command: apt-mark hold {{ docker__package }}
+  register: docker_engine_hold_res
+  when: docker__version_hold == true and docker__need_install
+  changed_when: docker_engine_hold_res.stdout == '%s set on hold.' % docker__package
+
+- name: Enable docker service
+  service:
+    name: docker
+    enabled: true
+
+- name: Restart docker service
+  service:
+    name: docker
+    state: restarted
+  when: restart_docker == 'force' or (docker_service.changed and (restart_docker | bool))
+
+- include: python-docker-pip.yml
+

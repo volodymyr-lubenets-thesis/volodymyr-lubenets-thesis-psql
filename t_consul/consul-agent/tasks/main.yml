@@ -1,0 +1,49 @@
+- name: Create consul data & config dirs
+  file:
+    path: "{{item}}"
+    state: directory
+  with_items:
+    - /var/lib/consul
+    - /etc/consul.d
+
+- name: Write consul config.json
+  copy:
+    dest: /etc/consul.d/config.json
+    content: "{{ consul_config | to_nice_json }}"
+  vars:
+    consul_config:
+      advertise_addr: "{{ ansible_all_ipv4_addresses | ipaddr(internal_network) | first }}"
+      client_addr: "127.0.0.1 {{ ansible_all_ipv4_addresses | ipaddr(internal_network) | first }}"
+      data_dir: "/var/lib/consul"
+      datacenter: "{{ consul_datacenter }}"
+      domain: "{{ consul_domain }}"
+      ports:
+        dns: 53
+      recursors: 
+        - "8.8.8.8"
+        - "8.8.4.4"
+      dns_config:
+        recursor_timeout: "{{ consul_dns_recursor_timeout }}"
+      retry_join: "{{ groups['servers'] }}" # jq('.[] | $hostvars[.].ansible_host', variables={'hostvars': hostvars}) }}
+      enable_syslog: true
+      enable_local_script_checks: true
+  notify:
+    - restart consul-agent
+
+- name: Create consul-agent service
+  template:
+    src: consul-agent.service
+    dest: /etc/systemd/system/consul-agent.service
+  register: consul_service
+  notify:
+    - restart consul-agent
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+  when: consul_service.changed
+
+- name: Enable consul-agent service
+  service:
+    name: consul-agent
+    state: started
+    enabled: true

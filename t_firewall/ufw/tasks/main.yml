@@ -1,0 +1,35 @@
+- name: Allow everything and enable UFW
+  ufw:
+    state: enabled
+    policy: allow
+
+- name: Allow OpenSSH from everywhere
+  ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: Allow all access from internal network to this host
+  ufw:
+    rule: allow
+    src: '{{internal_network}}'
+
+- name: Allow all access from specific IPs to preconfigured hosts
+  ufw:
+    rule: allow
+    src: "{{item}}"
+  loop: "{{ firewall_allowed_ips }}"
+  when: firewall_allowed_ips is defined
+
+- name: Add custom rules if specified for a host
+  ufw:
+    rule: "{{ item.rule }}"
+    route: "{{ item.route }}"
+    from: "{{ item.from }}"
+    to: "{{ item.to }}"
+  loop: "{{ firewall_custom_rules }}"
+  when: firewall_custom_rules is defined
+
+- name: Set deny policy
+  ufw:
+    state: enabled
+    policy: deny

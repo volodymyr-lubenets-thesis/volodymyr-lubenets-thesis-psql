@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 5s
+  scrape_timeout: 5s
+  evaluation_interval: 10s
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets:
+        - '{{ alertmanager_host | default(inventory_hostname, true) }}:{{alertmanager_port | default(8080, true)}}'
+      scheme: http
+      timeout: 10s
+rule_files:
+  - /etc/prometheus/rules.d/*.conf
+scrape_configs:
+  - job_name: ConsulAgents
+    metrics_path: /metrics
+    scheme: http
+    consul_sd_configs:
+      - server: "127.0.0.1:8500"
+        datacenter: "{{ consul_dc }}"
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        regex: "^.+-metrics$"
+        action: keep
+      - source_labels: [__meta_consul_service]
+        regex: "^(.+)-metrics$"
+        target_label: job
+        replacement: "$1"
+      - source_labels: [__meta_consul_node]
+        target_label: host
+  - job_name: Prometheus
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+        - "localhost:9090"

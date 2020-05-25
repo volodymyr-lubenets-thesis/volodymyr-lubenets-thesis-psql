@@ -1,0 +1,35 @@
+- include: repmgr-setup.yml
+  tags:
+    - install-repmgr
+
+- name: Prompt
+  pause:
+    prompt: "{{ repmgr_master }} will be configured as master, press Enter to approve"
+  tags:
+    - master-setup
+
+- include: master-config.yml
+  when: inventory_hostname == repmgr_master
+  tags:
+    - master-setup
+
+- name: Prompt
+  pause:
+    prompt: "All data will be destroyed from {{ repmgr_slaves }}, press Enter to approve"
+
+- include: slave-setup.yml
+  when: inventory_hostname in repmgr_slaves
+
+- include: repmgrd.yml
+  tags:
+    - install-daemon-repmgrd
+
+- include: witness-config.yml
+  when: inventory_hostname in repmgr_witnesses
+  tags:
+    - witness
+
+- include: consul-setup.yml
+  when: inventory_hostname == repmgr_master or inventory_hostname in repmgr_slaves
+  tags:
+    - consul

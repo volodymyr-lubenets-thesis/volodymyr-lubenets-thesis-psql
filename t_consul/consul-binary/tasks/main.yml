@@ -1,0 +1,18 @@
+- name: Fetch consul binary package
+  get_url:
+    url: https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_amd64.zip
+    dest: /srv/consul.zip
+    checksum: "{{ consul_checksum }}"
+
+- name: Unarchive consul.zip
+  unarchive:
+    src: /srv/consul.zip
+    dest: /usr/local/bin
+    remote_src: true
+    creates: /usr/local/bin/consul
+
+- name: Set consul as executable
+  file:
+    path: /usr/local/bin/consul
+    state: file
+    mode: '0755'

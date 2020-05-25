@@ -1,0 +1,11 @@
+[Unit]
+Description=Node Exporter
+Wants=network-online.target node-exporter-smartmon.service
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/node_exporter --collector.meminfo_numa --collector.textfile.directory=/run/node_exporter/textfile
+
+[Install]
+WantedBy=multi-user.target

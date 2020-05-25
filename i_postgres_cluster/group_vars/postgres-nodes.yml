@@ -1,0 +1,85 @@
+postgres_repmgr_user_pass: DUMMYPASSWORD1337
+postgres_version: "9.6"
+postgres_config_max_wal_senders: "8"
+
+postgres_pitr_config_PATH_for_cron: "/bin:/usr/bin:/usr/local/bin"
+postgres_pitr_config_archive_timeout: "30"
+postgres_pitr_config_aws_region: "eu-west-1"
+postgres_pitr_config_gpg_pk_fingerprint: "C4FC6745C2E1A5894A2BD3D36F7E04B1BFF9B4DB"
+postgres_pitr_remote_bucket_address: "s3://backups-valdemar/test-pitr"
+postgres_pitr_rotation_keep_basebackups: 7
+
+postgres_pitr_gpg_pubkey: |4
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+    mQENBFxzwi4BCACdWQCnnl12svXhI+npJYB23PAGTsRMogip7kLk81c5GkS31kf1
+    O1JgsF8ZNgPgm1U2Vw/2yw81APc1+qw9SKawv2qi05Pou0j38TAJNXeQzSSamVV8
+    JN5LSbFFC4LIvY4LK5G8PRLOPJaQO+u3K4w8gqWfq2aM9w/t6fy0/wRPzoS80sDG
+    XgPiboe/0IFEKcrcRLI5t35wCAf+nVXYv6I416zsX92uIO6RqHtympPo8eYcUxCK
+    O03IMuq9OBe7QCM6NWQ1PyoS2UCZumMCUjk8VuuBNYx8rGWdlQB8NxE/cNQRq1+K
+    MJ+/L21MUBwgOKWXzfalssmsP6N4+kTsnLKtABEBAAG0KVZhbGRlbWFyIE5hcmEg
+    PHZvbGRlbWFyaWNoLmRldkBnbWFpbC5jb20+iQFUBBMBCAA+FiEExPxnRcLhpYlK
+    K9PTb34Esb/5tNsFAlxzwi4CGwMFCQPCZwAFCwkIBwIGFQoJCAsCBBYCAwECHgEC
+    F4AACgkQb34Esb/5tNucRQf/WC98FA7iGDidoIxJaNptq7nhSwdAj9glqqie4eVA
+    /NSepU1Q4h9CKS6wJjqC/CuN9/ZR8cc3q23r8krePjBe7qxWGvRN6Wejhta/x3Ux
+    Y0dxj+irkqLrmV6BR44MKrKM0MG4nAHdqyjnH/vdL06mWcPvUdUJJ2lLDNZgcOUr
+    7y2Nm4LF67nv1tNC6gjwl/NOCF4t+APInN2AnHKMB78PWyBOdqxtPbjWW+b1x0D+
+    l2jaRscAMV3EUdYj/zcaPFYdFwZBsjxciTIvTJgU7juxQop1FCYjfsX/TVkgkYUj
+    G0pSnCIAIdwIx9vgK3VxZafKfDOxM5+4pNTuyrfaXvx6G7kBDQRcc8IuAQgAwTgb
+    QWFWEKX2rXEk9MiEObJTpOFbL6TVjg1xrV1Z1VEO3/9CADcj19wQKMqWlcguf5gR
+    6NnaU0EYNNUnkCkpy1sYY2ovywyiOLvHxCNclEfU8Kf58xTxGMM2GEgqD6kkcbOW
+    No2aamBN2qE2GfxGUUaQ9Prx56oJ9wiBW/ODmOmmoX5a1T2AGg6kZ9Be2/FR6D6W
+    hJn3KKF8OJ8oZDD+JdO7UpHKaaf1Mxcx3hqeo02uLYuSxKYJpsHXJeJByg8tJyga
+    45pBeyBnA/SmfulsXjOLXcghX63Ftnz3mWP+9Tucftu6XprymHAdMTipI87nc/Uw
+    whh9EkLU3V+Zn1/ovQARAQABiQE8BBgBCAAmFiEExPxnRcLhpYlKK9PTb34Esb/5
+    tNsFAlxzwi4CGwwFCQPCZwAACgkQb34Esb/5tNvBTQf9GYeXWctLI+MMhr2qRcH7
+    EfaraxAbIP0AeyCcdk3SiHKJqyvkeEkrWbJvq6qzZUfCzYXZ3wJ5/tFpwGl7N7/M
+    CDJlb2IzIT1mzqnwmXTVZCutN+jT+gQ2IDGceNzbszNxRxNW+JyNlQHKv9jdS3lc
+    CgsJPux0BrzKfIo4OhrXcHtDd7ai+U8HGCfGj/yNL3iyhTSwliAlEnRfQlYaKPRo
+    L2ehV+9azFaGzFsydAv+iKclkBoDMtlfNIPYwhoYSc8zaoWn6JLZTBT/INJcSD8v
+    3+3TF4KqQbpEkSfsNYU6kS8J9L/oeoFmN1gQvwTZuvE5+chWOa6JhJtA35LkdNh1
+    3A==
+    =psFo
+    -----END PGP PUBLIC KEY BLOCK-----
+
+postgres_pitr_gpg_ownertrust: |4
+    C4FC6745C2E1A5894A2BD3D36F7E04B1BFF9B4DB:6:
+
+postgres_pitr_credentials_aws_key_id: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          62323138613830643963326166323863323965336563363566663265326338383337663330376230
+          3636313164376162346435313930656639323263323733630a643162646431636261643630626338
+          37326162386638643339366431643635346633643263303434623939646266343561343864303530
+          3166343665306535320a363930646265653933343938623536396663646262323032303035646435
+          31323561333138333765333132613964643061373931363262323933616335663166
+
+postgres_pitr_credentials_aws_access_key: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          35323564636162323362613165393737363534366664383366636438633134373134626462353264
+          6332666430653535383566313131636432396434303432630a633533626366353539666134653838
+          61373937326465653932343538613037633363343032316435623538643239653833356535653431
+          3230383234383038630a306631626236316539623230616564366166666333333366353339643837
+          38303166646232313663646463636263616362383566623166333033386238653032663339356264
+          3461663931363964393633653033323466393166303430363062
+
+postgres_service_name: "test-postgres-cluster"
+repmgr_master: db001.node.postgres.cluster.test
+repmgr_slaves: [db002.node.postgres.cluster.test, db003.node.postgres.cluster.test, dr001.node.postgres.cluster.test]
+repmgr_witnesses: []
+repmgr_required_quorum_score: 3
+
+internal_network: 192.168.50.0/24
+
+repmgr_reconnect_attempts: 6
+repmgr_reconnect_interval: 10
+
+repmgr_nodes:
+  - db001.node.postgres.cluster.test:
+      id: 1
+  - db002.node.postgres.cluster.test:
+      id: 2
+  - db003.node.postgres.cluster.test:
+      id: 3
+  - dr001.node.postgres.cluster.test:
+      id: 4
+      delayed_replica_delay: 15000 # number has to be specified in msec

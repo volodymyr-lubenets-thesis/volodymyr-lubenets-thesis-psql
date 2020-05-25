@@ -1,0 +1,26 @@
+consul_dc: postgres
+telegraf_tags:
+  cluster: test-cluster
+prometheus_web_external_url: http://mon001.node.postgres.cluster.test:9090
+prometheus_rules: !unsafe | # adding !unsafe flag not to confuse ansible templating with prometheus templating
+  groups:
+    - name: Hardware
+      rules:
+        - alert: HostSMARTDriveStatusUnhealthy
+          expr: smartmon_device_smart_healthy != 1
+          annotations:
+            summary: "The disk's {{$labels.disk}} S.M.A.R.T. monitoring is unhealthy at host {{ $labels.host }}!"
+            description: "S.M.A.R.T. test did not pass. This is critical state. Manage drive replacement NOW!"
+            value: "{{ $value }}"
+          labels:
+            severity: "critical"
+    - name: Database
+      rules:
+        - alert: PostgresSlowQueriesAppeared
+          expr: sum(postgres_slowqueries_quantity{datname='testdb', duration='2'}) > 1
+          for: 30s
+          annotations:
+            summary: "There are {{ $value }} queries in the test DB running for more than 2s."
+            value: "{{ $value }}"
+          labels:
+            severity: "critical"
